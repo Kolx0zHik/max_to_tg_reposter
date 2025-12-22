@@ -1,6 +1,7 @@
 import asyncio
 import logging
-from typing import Dict, Optional
+from collections import defaultdict
+from typing import Dict, List, Optional
 
 from pymax import MaxClient
 from pymax.payloads import UserAgentPayload
@@ -63,7 +64,7 @@ async def handle_message(
     client: MaxClient,
     tg: TelegramSender,
     state: StateStore,
-    routes_map: Dict[int, int],
+    routes_map: Dict[int, List[int]],
     chat_titles: Dict[int, str],
     override_chat_id: Optional[int] = None,
 ) -> None:
@@ -84,10 +85,13 @@ async def handle_message(
     author = await resolve_author(client, message.sender)
     chat_title = chat_titles.get(chat_id, str(chat_id))
     text = format_message_text(message, chat_title, author)
-    tg_chat = routes_map[chat_id]
+    tg_chats = routes_map.get(chat_id, [])
+    if not tg_chats:
+        return
 
-    await tg.send_text(tg_chat, text)
-    await send_attachments(message, client, tg, tg_chat)
+    for tg_chat in tg_chats:
+        await tg.send_text(tg_chat, text)
+        await send_attachments(message, client, tg, tg_chat)
 
     state.set_last(chat_id, msg_id)
 
@@ -100,7 +104,9 @@ async def run() -> None:
     )
 
     state = StateStore(settings.state_path)
-    routes_map = {route.max_chat_id: route.tg_chat_id for route in settings.routes}
+    routes_map: Dict[int, List[int]] = defaultdict(list)
+    for route in settings.routes:
+        routes_map[route.max_chat_id].append(route.tg_chat_id)
     tg = TelegramSender(settings.telegram_token)
 
     user_agent = UserAgentPayload(device_type="WEB", app_version=settings.app_version)
@@ -121,7 +127,7 @@ async def run() -> None:
     async def on_start() -> None:
         nonlocal chat_titles
         chat_titles = build_chat_title_map(client, routes_map)
-        client.logger.info("Active routes: %s", routes_map)
+        client.logger.info("Active routes: %s", dict(routes_map))
         client.logger.info("Chat titles detected: %s", chat_titles)
 
         for route in settings.routes:

@@ -39,6 +39,14 @@ class TelegramSender:
             data = resp.json()
             if not data.get("ok"):
                 self.logger.error("Telegram error: %s", data)
+        except httpx.HTTPStatusError as e:
+            body = e.response.text if e.response else ""
+            self.logger.error(
+                "Telegram HTTP error status=%s path=%s body=%s",
+                e.response.status_code if e.response else "n/a",
+                path,
+                body,
+            )
         except Exception:
             self.logger.exception("Telegram request failed path=%s", path)
             await asyncio.sleep(1)
