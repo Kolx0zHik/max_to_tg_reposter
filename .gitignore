@@ -1,5 +1,6 @@
 .env
 data/
 max_session/
+config/
 __pycache__/
 *.pyc
