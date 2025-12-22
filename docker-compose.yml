@@ -1,8 +1,6 @@
-version: "3.9"
-
 services:
   bridge:
-    build: .
+    image: ghcr.io/kolx0zhik/max_to_tg_reposter:latest
     env_file: .env
     restart: unless-stopped
     volumes:
