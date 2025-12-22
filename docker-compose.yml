@@ -1,0 +1,11 @@
+version: "3.9"
+
+services:
+  bridge:
+    build: .
+    env_file: .env
+    restart: unless-stopped
+    volumes:
+      - ./config:/app/config:ro
+      - ./data:/app/data
+      - ./max_session:/app/.max_session
