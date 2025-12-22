@@ -26,6 +26,22 @@ class Settings:
 
 
 def load_routes(config_path: Path) -> List[Route]:
+    if not config_path.exists():
+        config_path.parent.mkdir(parents=True, exist_ok=True)
+        template = {
+            "routes": [
+                {"max_chat_id": -123456789, "tg_chat_id": 123456789},
+                {"max_chat_id": -987654321, "tg_chat_id": 987654321},
+            ]
+        }
+        config_path.write_text(
+            yaml.safe_dump(template, allow_unicode=True, sort_keys=False),
+            encoding="utf-8",
+        )
+        raise FileNotFoundError(
+            f"Config file {config_path} was missing. A template was created; please fill it and restart."
+        )
+
     with config_path.open("r", encoding="utf-8") as f:
         data = yaml.safe_load(f) or {}
     routes_raw = data.get("routes", [])

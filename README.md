@@ -24,7 +24,13 @@ MAX_WORK_DIR=.max_session
 LOG_LEVEL=INFO
 STARTUP_HISTORY=3
 ```
-2) Отредактируйте `config/groups.yaml` под свои чаты.
+2) Создайте `config/groups.yaml` (или скопируйте шаблон `config.example/groups.yaml`) и заполните:
+```yaml
+routes:
+  - max_chat_id: -123456789   # id чата в MAX
+    tg_chat_id: 123456789     # id чата/канала в TG
+```
+   При первом запуске контейнера, если файла нет, он будет создан с шаблоном; заполните и перезапустите.
 
 ## Запуск
 ```bash
