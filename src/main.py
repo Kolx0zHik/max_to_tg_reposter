@@ -111,6 +111,9 @@ async def run() -> None:
         work_dir=str(settings.work_dir),
         send_fake_telemetry=True,
     )
+    # Принудительно кладём актуальный токен в базу PyMax, чтобы не использовать устаревший из session.db
+    client._token = settings.max_token  # type: ignore[attr-defined]
+    client._database.update_auth_token(client._device_id, settings.max_token)  # type: ignore[attr-defined]
 
     chat_titles: Dict[int, str] = {}
 
