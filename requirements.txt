@@ -1,3 +1,4 @@
 maxapi-python
 httpx
 PyYAML
+aiogram~=3.22.0

@@ -1,7 +1,7 @@
 import os
 from dataclasses import dataclass
 from pathlib import Path
-from typing import List
+from typing import List, Optional
 
 import yaml
 
@@ -9,7 +9,7 @@ import yaml
 @dataclass
 class Route:
     max_chat_id: int
-    tg_chat_id: int
+    tg_chat_id: Optional[int]
 
 
 @dataclass
@@ -19,10 +19,13 @@ class Settings:
     app_version: str
     work_dir: Path
     state_path: Path
+    subscribers_path: Path
+    catalog_path: Path
     routes: List[Route]
     startup_history: int
     log_level: str
     telegram_token: str
+    admin_chat_id: int
 
 
 def load_routes(config_path: Path) -> List[Route]:
@@ -30,8 +33,8 @@ def load_routes(config_path: Path) -> List[Route]:
         config_path.parent.mkdir(parents=True, exist_ok=True)
         template = {
             "routes": [
-                {"max_chat_id": -123456789, "tg_chat_id": 123456789},
-                {"max_chat_id": -987654321, "tg_chat_id": 987654321},
+                {"max_chat_id": -123456789},
+                {"max_chat_id": -987654321},
             ]
         }
         config_path.write_text(
@@ -51,7 +54,7 @@ def load_routes(config_path: Path) -> List[Route]:
             routes.append(
                 Route(
                     max_chat_id=int(item["max_chat_id"]),
-                    tg_chat_id=int(item["tg_chat_id"]),
+                    tg_chat_id=int(item["tg_chat_id"]) if "tg_chat_id" in item else None,
                 )
             )
         except Exception as exc:  # noqa: BLE001
@@ -82,6 +85,9 @@ def load_settings() -> Settings:
     state_path = Path(os.getenv("STATE_PATH", "data/state.json"))
     startup_history = int(os.getenv("STARTUP_HISTORY", "3"))
     log_level = os.getenv("LOG_LEVEL", "INFO").upper()
+    admin_chat_id = int(os.getenv("ADMIN_CHAT_ID", "0"))
+    subscribers_path = Path(os.getenv("SUBSCRIBERS_PATH", "data/subscribers.json"))
+    catalog_path = Path(os.getenv("CATALOG_PATH", "data/catalog.json"))
 
     return Settings(
         max_phone=max_phone,
@@ -89,8 +95,11 @@ def load_settings() -> Settings:
         app_version=app_version,
         work_dir=work_dir,
         state_path=state_path,
+        subscribers_path=subscribers_path,
+        catalog_path=catalog_path,
         routes=routes,
         startup_history=startup_history,
         log_level=log_level,
         telegram_token=telegram_token,
+        admin_chat_id=admin_chat_id,
     )
