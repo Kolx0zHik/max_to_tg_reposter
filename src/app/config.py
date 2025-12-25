@@ -1,15 +1,6 @@
 import os
 from dataclasses import dataclass
 from pathlib import Path
-from typing import List, Optional
-
-import yaml
-
-
-@dataclass
-class Route:
-    max_chat_id: int
-    tg_chat_id: Optional[int]
 
 
 @dataclass
@@ -21,53 +12,14 @@ class Settings:
     state_path: Path
     subscribers_path: Path
     catalog_path: Path
-    routes: List[Route]
+    log_path: Path
     startup_history: int
     log_level: str
     telegram_token: str
     admin_chat_id: int
 
 
-def load_routes(config_path: Path) -> List[Route]:
-    if not config_path.exists():
-        config_path.parent.mkdir(parents=True, exist_ok=True)
-        template = {
-            "routes": [
-                {"max_chat_id": -123456789},
-                {"max_chat_id": -987654321},
-            ]
-        }
-        config_path.write_text(
-            yaml.safe_dump(template, allow_unicode=True, sort_keys=False),
-            encoding="utf-8",
-        )
-        raise FileNotFoundError(
-            f"Config file {config_path} was missing. A template was created; please fill it and restart."
-        )
-
-    with config_path.open("r", encoding="utf-8") as f:
-        data = yaml.safe_load(f) or {}
-    routes_raw = data.get("routes", [])
-    routes: List[Route] = []
-    for item in routes_raw:
-        try:
-            routes.append(
-                Route(
-                    max_chat_id=int(item["max_chat_id"]),
-                    tg_chat_id=int(item["tg_chat_id"]) if "tg_chat_id" in item else None,
-                )
-            )
-        except Exception as exc:  # noqa: BLE001
-            raise ValueError(f"Invalid route entry: {item}") from exc
-    if not routes:
-        raise ValueError("No routes configured in config file")
-    return routes
-
-
 def load_settings() -> Settings:
-    config_path = Path(os.getenv("CONFIG_PATH", "config/groups.yaml"))
-    routes = load_routes(config_path)
-
     max_token = os.getenv("MAX_TOKEN")
     if not max_token:
         raise ValueError("MAX_TOKEN is required (value from __oneme_auth)")
@@ -88,6 +40,7 @@ def load_settings() -> Settings:
     admin_chat_id = int(os.getenv("ADMIN_CHAT_ID", "0"))
     subscribers_path = Path(os.getenv("SUBSCRIBERS_PATH", "data/subscribers.json"))
     catalog_path = Path(os.getenv("CATALOG_PATH", "data/catalog.json"))
+    log_path = Path(os.getenv("LOG_PATH", "data/app.log"))
 
     return Settings(
         max_phone=max_phone,
@@ -97,7 +50,7 @@ def load_settings() -> Settings:
         state_path=state_path,
         subscribers_path=subscribers_path,
         catalog_path=catalog_path,
-        routes=routes,
+        log_path=log_path,
         startup_history=startup_history,
         log_level=log_level,
         telegram_token=telegram_token,

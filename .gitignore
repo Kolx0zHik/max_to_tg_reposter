@@ -4,4 +4,5 @@ max_session/
 config/
 __pycache__/
 *.pyc
-docker-compose.yml
+
+

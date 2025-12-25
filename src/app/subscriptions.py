@@ -57,6 +57,18 @@ class SubscriptionsStore:
             users[uid]["chats"] = sorted(chats)
             self._save()
 
+    def remove_group_from_all(self, chat_id: int) -> None:
+        users = self._data.setdefault("users", {})
+        changed = False
+        for uid, payload in users.items():
+            chats = set(payload.get("chats", []))
+            if int(chat_id) in chats:
+                chats.remove(int(chat_id))
+                payload["chats"] = sorted(chats)
+                changed = True
+        if changed:
+            self._save()
+
     def get_user_chats(self, user_id: int) -> List[int]:
         users = self._data.get("users", {})
         user = users.get(str(user_id), {})
@@ -82,7 +94,7 @@ class CatalogStore:
         self.path.parent.mkdir(parents=True, exist_ok=True)
         self._data: Dict[str, list] = {"groups": []}
         if not self.path.exists():
-            self._data["groups"] = [{"id": int(cid), "hidden": False} for cid in sorted(set(initial_chat_ids))]
+            self._data["groups"] = [{"id": int(cid)} for cid in sorted(set(initial_chat_ids))]
             self._save()
         else:
             self._load()
@@ -104,11 +116,11 @@ class CatalogStore:
         existing = {g.get("id") for g in self._data.get("groups", [])}
         for cid in set(initial_chat_ids):
             if int(cid) not in existing:
-                self._data.setdefault("groups", []).append({"id": int(cid), "hidden": False})
+                self._data.setdefault("groups", []).append({"id": int(cid)})
         self._save()
 
     def list_visible(self) -> List[int]:
-        return [int(g["id"]) for g in self._data.get("groups", []) if not g.get("hidden")]
+        return [int(g["id"]) for g in self._data.get("groups", [])]
 
     def list_all(self) -> List[dict]:
         return self._data.get("groups", [])
@@ -117,24 +129,14 @@ class CatalogStore:
         groups = self._data.setdefault("groups", [])
         for g in groups:
             if int(g.get("id")) == int(chat_id):
-                g["hidden"] = False
                 self._save()
                 return
-        groups.append({"id": int(chat_id), "hidden": False})
+        groups.append({"id": int(chat_id)})
         self._save()
 
-    def hide_group(self, chat_id: int) -> None:
+    def remove_group(self, chat_id: int) -> None:
         groups = self._data.setdefault("groups", [])
-        for g in groups:
-            if int(g.get("id")) == int(chat_id):
-                g["hidden"] = True
-                self._save()
-                return
-
-    def unhide_group(self, chat_id: int) -> None:
-        groups = self._data.setdefault("groups", [])
-        for g in groups:
-            if int(g.get("id")) == int(chat_id):
-                g["hidden"] = False
-                self._save()
-                return
+        before = len(groups)
+        groups[:] = [g for g in groups if int(g.get("id")) != int(chat_id)]
+        if len(groups) != before:
+            self._save()

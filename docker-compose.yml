@@ -1,9 +1,8 @@
 services:
   bridge:
-    image: ghcr.io/kolx0zhik/max_to_tg_reposter:latest
+    build: .
     env_file: .env
     restart: unless-stopped
     volumes:
-      - ./config:/app/config
       - ./data:/app/data
       - ./max_session:/app/.max_session
