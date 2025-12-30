@@ -38,24 +38,30 @@ async def resolve_author(client: MaxClient, sender_id: Optional[int]) -> Optiona
     return None
 
 
-async def send_attachments(message: Message, client: MaxClient, tg: TelegramSender, chat_id: int) -> None:
+async def send_attachments(
+    message: Message,
+    client: MaxClient,
+    tg: TelegramSender,
+    chat_id: int,
+    download_headers: Optional[dict] = None,
+) -> None:
     if not message.attaches:
         return
 
     for attach in message.attaches:
         try:
             if isinstance(attach, PhotoAttach):
-                data, name = await fetch_bytes(attach.base_url)
+                data, name = await fetch_bytes(attach.base_url, headers=download_headers)
                 await tg.send_photo(chat_id, data, filename=name or "photo.jpg")
             elif isinstance(attach, VideoAttach):
                 video = await client.get_video_by_id(chat_id=message.chat_id, message_id=message.id, video_id=attach.video_id)
                 if video:
-                    data, name = await fetch_bytes(video.url)
+                    data, name = await fetch_bytes(video.url, headers=download_headers)
                     await tg.send_video(chat_id, data, filename=name or "video.mp4")
             elif isinstance(attach, FileAttach):
                 file_resp = await client.get_file_by_id(chat_id=message.chat_id, message_id=message.id, file_id=attach.file_id)
                 if file_resp:
-                    data, name = await fetch_bytes(file_resp.url)
+                    data, name = await fetch_bytes(file_resp.url, headers=download_headers)
                     await tg.send_document(chat_id, data, filename=name or attach.name or "file")
         except Exception:
             client.logger.exception("Failed to send attachment message_id=%s", message.id)
@@ -97,7 +103,8 @@ async def handle_message(
 
     for tg_chat in sorted(tg_chats):
         await tg.send_text(tg_chat, text)
-        await send_attachments(message, client, tg, tg_chat)
+        download_headers = {"Cookie": f"__oneme_auth={settings.max_token}"}
+        await send_attachments(message, client, tg, tg_chat, download_headers=download_headers)
 
     state.set_last(chat_id, msg_id)
 
