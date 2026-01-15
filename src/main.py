@@ -1,5 +1,6 @@
 import asyncio
 import logging
+from logging.handlers import TimedRotatingFileHandler
 from collections import defaultdict
 from typing import Dict, List, Optional
 
@@ -112,12 +113,19 @@ async def handle_message(
 async def run() -> None:
     settings = load_settings()
     settings.log_path.parent.mkdir(parents=True, exist_ok=True)
+    file_handler = TimedRotatingFileHandler(
+        settings.log_path,
+        when="midnight",
+        interval=1,
+        backupCount=1,
+        encoding="utf-8",
+    )
     logging.basicConfig(
         level=settings.log_level,
         format="%(asctime)s %(levelname)s %(name)s %(message)s",
         handlers=[
             logging.StreamHandler(),
-            logging.FileHandler(settings.log_path, encoding="utf-8"),
+            file_handler,
         ],
     )
 
